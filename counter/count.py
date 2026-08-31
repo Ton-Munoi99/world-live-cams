@@ -1,0 +1,114 @@
+"""
+People counter prototype — นับคนเดินข้ามเส้น เข้า/ออก จากไฟล์วิดีโอ
+เทคโนโลยี: YOLO11 (detect คน) + supervision ByteTrack (track) + LineZone (นับข้ามเส้น)
+
+ติดตั้ง:  pip install ultralytics supervision opencv-python
+รัน:      python count.py street.mp4
+          python count.py street.mp4 --save out.mp4        # เซฟวิดีโอที่มีตัวเลขกำกับ
+          python count.py 0                                 # ใช้เว็บแคม
+          python count.py street.mp4 --line 0 540 1920 540  # ตีเส้นเอง (x1 y1 x2 y2)
+          python count.py --selftest                        # ตรวจ logic นับข้ามเส้น (ไม่ต้องมีวิดีโอ)
+
+data ที่ได้: in_count / out_count สด → ต่อยอดส่งขึ้น API/dashboard ขายเป็น foot-traffic analytics ได้
+ponytail: การนับใช้ supervision.LineZone ทั้งหมด เราแค่ต่อท่อ YOLO→tracker→เส้น
+"""
+import argparse, sys
+
+
+def selftest():
+    # ตรวจว่า logic นับข้ามเส้นทำงาน: คน 1 คน เดินจากใต้เส้นขึ้นข้ามเส้น = ต้องนับได้ 1 ครั้ง
+    import numpy as np, supervision as sv
+    line = sv.LineZone(start=sv.Point(0, 100), end=sv.Point(200, 100),
+                       triggering_anchors=(sv.Position.CENTER,))
+
+    def det(cy):  # คนกล่องเดียว ที่ y = cy, tracker_id=1
+        return sv.Detections(xyxy=np.array([[90., cy - 10, 110., cy + 10]]),
+                             tracker_id=np.array([1]))
+
+    line.trigger(det(150))   # อยู่ใต้เส้น (y มาก = ล่างในพิกัดภาพ)
+    line.trigger(det(50))    # ข้ามขึ้นเหนือเส้น
+    total = line.in_count + line.out_count
+    assert total == 1, f"คาดว่านับข้ามได้ 1 ครั้ง แต่ได้ {total} (in={line.in_count}, out={line.out_count})"
+    print(f"[selftest OK] นับข้ามเส้นได้ 1 ครั้ง (in={line.in_count}, out={line.out_count})")
+
+
+def run(source, line_pts, save_path, show):
+    import cv2, supervision as sv
+    from ultralytics import YOLO
+
+    src = int(source) if str(source).isdigit() else source
+    model = YOLO("yolo11n.pt")  # โหลดอัตโนมัติครั้งแรก (~5MB)
+
+    # หาขนาดเฟรมเพื่อวางเส้นกลางจอถ้าไม่ได้ระบุ
+    cap = cv2.VideoCapture(src)
+    ok, frame = cap.read()
+    if not ok:
+        sys.exit(f"เปิดวิดีโอไม่ได้: {source}")
+    h, w = frame.shape[:2]
+    fps = cap.get(cv2.CAP_PROP_FPS) or 25
+    cap.release()
+
+    if line_pts:
+        x1, y1, x2, y2 = line_pts
+    else:  # เส้นแนวนอนกลางจอ
+        x1, y1, x2, y2 = 0, h // 2, w, h // 2
+    line = sv.LineZone(start=sv.Point(x1, y1), end=sv.Point(x2, y2),
+                       triggering_anchors=(sv.Position.BOTTOM_CENTER,))
+
+    box = sv.BoxAnnotator(thickness=2)
+    labels = sv.LabelAnnotator(text_scale=0.5)
+    trace = sv.TraceAnnotator(thickness=2, trace_length=30)
+    line_anno = sv.LineZoneAnnotator(thickness=2, text_scale=0.8,
+                                     custom_in_text="IN", custom_out_text="OUT")
+
+    writer = None
+    if save_path:
+        writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
+
+    # classes=[0] = คนเท่านั้น | persist=True เพื่อคง tracker_id ข้ามเฟรม
+    for res in model.track(source=src, stream=True, persist=True, classes=[0],
+                           tracker="bytetrack.yaml", verbose=False):
+        f = res.orig_img
+        det = sv.Detections.from_ultralytics(res)
+        if det.tracker_id is not None:
+            line.trigger(det)
+        ids = det.tracker_id if det.tracker_id is not None else [None] * len(det)
+        f = trace.annotate(f, det)
+        f = box.annotate(f, det)
+        f = labels.annotate(f, det, labels=[f"#{i}" for i in ids])
+        f = line_anno.annotate(f, line)
+        import cv2 as _cv
+        _cv.putText(f, f"IN {line.in_count}  OUT {line.out_count}  NOW {len(det)}",
+                    (20, 40), _cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+        if writer:
+            writer.write(f)
+        if show:
+            _cv.imshow("people counter", f)
+            if _cv.waitKey(1) & 0xFF == ord("q"):
+                break
+
+    if writer:
+        writer.release()
+        print(f"เซฟแล้ว: {save_path}")
+    print(f"สรุป: IN={line.in_count}  OUT={line.out_count}  net={line.in_count - line.out_count}")
+
+
+if __name__ == "__main__":
+    p = argparse.ArgumentParser()
+    p.add_argument("source", nargs="?", help="ไฟล์วิดีโอ หรือ 0 = เว็บแคม")
+    p.add_argument("--line", nargs=4, type=int, metavar=("x1", "y1", "x2", "y2"))
+    p.add_argument("--save", metavar="out.mp4")
+    p.add_argument("--show", action="store_true", help="เปิดหน้าต่างดูสด")
+    p.add_argument("--selftest", action="store_true")
+    p.add_argument("--demo", action="store_true", help="ดึงวิดีโอคนเดินตัวอย่างมารันเลย")
+    a = p.parse_args()
+    if a.selftest:
+        selftest()
+    elif a.demo:
+        from supervision.assets import download_assets, VideoAssets
+        vid = download_assets(VideoAssets.PEOPLE_WALKING)
+        run(vid, a.line, a.save or "demo_out.mp4", a.show)
+    elif a.source:
+        run(a.source, a.line, a.save, a.show or not a.save)
+    else:
+        p.error("ต้องระบุไฟล์วิดีโอ หรือ --selftest")
