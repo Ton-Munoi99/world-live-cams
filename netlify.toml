@@ -1,0 +1,16 @@
+# เว็บ static ล้วน ไม่ต้อง build — เสิร์ฟไฟล์จากรากโปรเจกต์ตรงๆ
+[build]
+  publish = "."
+  command = ""
+
+# กันไฟล์ในโฟลเดอร์ counter ไม่ให้ถูกเสิร์ฟเป็นหน้าเว็บ
+[[redirects]]
+  from = "/counter/*"
+  to = "/index.html"
+  status = 404
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
