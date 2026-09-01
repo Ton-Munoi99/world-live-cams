@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>นับคน — World Live Cams</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+Thai:wght@400;600;700&display=swap">
+<style>
+  :root{--ground:#0B0E13;--surface:#151A22;--surface-2:#1D242E;--line:#28313D;
+        --txt:#E8EBF0;--muted:#8A94A3;--live:#FF4438;--focus:#5AA9E6;--in:#3DDC84;--out:#FFB020}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--txt);
+       font-family:"IBM Plex Sans Thai",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+  .mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+  header{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;
+         align-items:center;gap:14px;flex-wrap:wrap}
+  h1{margin:0;font-size:19px;font-weight:700}
+  a{color:var(--focus);font-size:13px;text-decoration:none}
+  a:hover{text-decoration:underline}
+  main{padding:18px 20px;max-width:1100px}
+  .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  button,select{background:var(--surface);color:var(--txt);border:1px solid var(--line);
+         border-radius:9px;padding:9px 13px;font-size:14px;font-family:inherit;cursor:pointer}
+  button:hover:not(:disabled){background:var(--surface-2)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+  .stage{position:relative;background:#000;border:1px solid var(--line);border-radius:12px;
+         overflow:hidden;aspect-ratio:16/9;display:grid;place-items:center}
+  .stage video,.stage canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .stage video{visibility:hidden}
+  .placeholder{color:var(--muted);font-size:14px;text-align:center;padding:20px;line-height:1.8;z-index:2}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:10px;margin:14px 0}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:12px 14px}
+  .stat .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .stat .v{font-size:26px;font-weight:600;margin-top:3px}
+  .stat.in .v{color:var(--in)}
+  .stat.out .v{color:var(--out)}
+
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0;font-size:13px;color:var(--muted)}
+  input[type=range]{accent-color:var(--focus);flex:1;min-width:160px}
+  .note{color:var(--muted);font-size:12.5px;line-height:1.75;max-width:70ch;margin-top:18px}
+  .warn{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--live);
+        border-radius:0 9px 9px 0;padding:11px 14px;font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:16px}
+  @media(max-width:640px){
+    header{padding:12px 14px}
+    main{padding:14px}
+    button,select{font-size:16px;padding:10px 13px}
+    .stat .v{font-size:22px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>👣 นับคนเดินผ่าน</h1>
+  <a href="/">← กลับหน้ากล้อง</a>
+</header>
+
+<main>
+  <div class="warn">
+    <b>ทำไมนับกล้องในหน้าแรกไม่ได้:</b> วิดีโอ YouTube ฝังมาแบบ cross-origin เบราว์เซอร์ห้าม JavaScript
+    อ่านภาพในนั้น จึงนับได้เฉพาะกล้องของเครื่องคุณเองหรือไฟล์วิดีโอที่เลือก —
+    ภาพทั้งหมดประมวลผลในเบราว์เซอร์ ไม่ถูกส่งออกไปไหน
+  </div>
+
+  <div class="tools">
+    <button id="camBtn">📷 ใช้กล้องเครื่องนี้</button>
+    <button id="fileBtn">🎞️ เลือกไฟล์วิดีโอ</button>
+    <input id="file" type="file" accept="video/*" hidden>
+    <button id="stopBtn" disabled>⏹ หยุด</button>
+    <button id="resetBtn" disabled>↺ ล้างตัวเลข</button>
+  </div>
+
+  <div class="stage" id="stage">
+    <video id="vid" playsinline muted></video>
+    <canvas id="cv"></canvas>
+    <div class="placeholder" id="ph"><span id="phMsg">เลือกกล้องหรือไฟล์วิดีโอเพื่อเริ่มนับ</span><br><span id="loadMsg"></span></div>
+  </div>
+
+  <div class="row">
+    <label for="lineY">ตำแหน่งเส้นนับ</label>
+    <input id="lineY" type="range" min="5" max="95" value="55">
+    <span class="mono" id="lineVal">55%</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat in"><div class="k">เข้า (ขึ้นบน)</div><div class="v mono" id="sIn">0</div></div>
+    <div class="stat out"><div class="k">ออก (ลงล่าง)</div><div class="v mono" id="sOut">0</div></div>
+    <div class="stat"><div class="k">สุทธิ</div><div class="v mono" id="sNet">0</div></div>
+    <div class="stat"><div class="k">ในเฟรมตอนนี้</div><div class="v mono" id="sNow">0</div></div>
+    <div class="stat"><div class="k">สูงสุด</div><div class="v mono" id="sPeak">0</div></div>
+    <div class="stat"><div class="k">ประมวลผล</div><div class="v mono" id="sFps">0</div></div>
+  </div>
+
+  <p class="note">
+    ลากแถบเลื่อนเพื่อวางเส้นนับตรงจุดที่คนเดินผ่านจริง — คนที่ข้ามเส้น<b>ขึ้นบน</b>นับเป็นเข้า
+    ข้าม<b>ลงล่าง</b>นับเป็นออก<br>
+    ความแม่นขึ้นกับขนาดคนในภาพ ถ้าคนตัวเล็กเกินไปจะตรวจไม่เจอ — วางกล้องให้ใกล้พอ<br>
+    นับแบบไม่ระบุตัวตน เก็บแค่ตัวเลข ไม่เก็บใบหน้า ไม่บันทึกภาพ
+  </p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script type="module">
+import { createTracker } from "./tracker.js";
+
+const vid = document.getElementById("vid");
+const cv = document.getElementById("cv");
+const ctx = cv.getContext("2d");
+const ph = document.getElementById("ph");
+const phMsg = document.getElementById("phMsg");
+const loadMsg = document.getElementById("loadMsg");
+
+let model = null, running = false, stream = null, raf = 0;
+let peak = 0, lineFrac = 0.55;
+
+const tracker = createTracker();
+
+let frames = 0, fpsT = performance.now();
+
+async function loop() {
+  if (!running) return;
+  const W = vid.videoWidth, H = vid.videoHeight;
+  if (W && H) {
+    if (cv.width !== W) { cv.width = W; cv.height = H; }
+    let dets = [];
+    try {
+      const all = await model.detect(vid, 20);
+      dets = all.filter(d => d.class === "person" && d.score > 0.45);
+    } catch (e) { /* เฟรมยังไม่พร้อม ข้ามไป */ }
+
+    tracker.update(dets, W, H, lineFrac);
+
+    ctx.drawImage(vid, 0, 0, W, H);
+    const ly = lineFrac * H;
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = Math.max(2, H / 300);
+    ctx.beginPath(); ctx.moveTo(0, ly); ctx.lineTo(W, ly); ctx.stroke();
+
+    ctx.lineWidth = Math.max(2, H / 360);
+    ctx.strokeStyle = "#A855F7";
+    ctx.fillStyle = "#A855F7";
+    ctx.font = Math.max(13, H / 40) + "px monospace";
+    for (const t of tracker.tracks) {
+      if (!t.seen || !t.box) continue;
+      const b = t.box;
+      ctx.strokeRect(b[0], b[1], b[2], b[3]);
+      ctx.fillText("#" + t.id, b[0] + 2, Math.max(14, b[1] - 4));
+    }
+
+    ctx.fillStyle = "#3DDC84";
+    ctx.font = "bold " + Math.max(16, H / 28) + "px monospace";
+    ctx.fillText("IN " + tracker.in + "  OUT " + tracker.out + "  NOW " + dets.length, 14, Math.max(24, H / 22));
+
+    peak = Math.max(peak, dets.length);
+    sIn.textContent = tracker.in;
+    sOut.textContent = tracker.out;
+    sNet.textContent = tracker.in - tracker.out;
+    sNow.textContent = dets.length;
+    sPeak.textContent = peak;
+
+    frames++;
+    const now = performance.now();
+    if (now - fpsT > 1000) {
+      sFps.textContent = (frames * 1000 / (now - fpsT)).toFixed(1);
+      frames = 0; fpsT = now;
+    }
+  }
+  raf = requestAnimationFrame(loop);
+}
+
+async function ensureModel() {
+  if (model) return;
+  loadMsg.textContent = "กำลังโหลดโมเดลตรวจจับคน… ครั้งแรกใช้เวลาสักครู่";
+  model = await cocoSsd.load({ base: "lite_mobilenet_v2" });
+  loadMsg.textContent = "";
+}
+
+async function start() {
+  try {
+    await ensureModel();
+  } catch (e) {
+    loadMsg.textContent = "โหลดโมเดลไม่สำเร็จ: " + e.message;
+    return;
+  }
+  ph.style.display = "none";
+  running = true;
+  stopBtn.disabled = false;
+  resetBtn.disabled = false;
+  await vid.play().catch(() => {});
+  loop();
+}
+
+function stop() {
+  running = false;
+  cancelAnimationFrame(raf);
+  vid.pause();
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  stopBtn.disabled = true;
+  ph.style.display = "";
+  phMsg.textContent = "หยุดแล้ว — เลือกกล้องหรือไฟล์เพื่อเริ่มใหม่";
+}
+
+camBtn.onclick = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment", width: { ideal: 1280 } }
+    });
+    vid.srcObject = stream;
+    vid.removeAttribute("src");
+    await start();
+  } catch (e) {
+    alert("เปิดกล้องไม่ได้: " + e.message + "\nต้องอนุญาตให้เว็บใช้กล้อง และหน้าเว็บต้องเป็น https");
+  }
+};
+
+fileBtn.onclick = () => file.click();
+
+file.onchange = async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  vid.srcObject = null;
+  vid.src = URL.createObjectURL(f);
+  vid.loop = true;
+  await start();
+};
+
+stopBtn.onclick = stop;
+
+resetBtn.onclick = () => {
+  tracker.reset(); peak = 0;
+  sIn.textContent = "0"; sOut.textContent = "0";
+  sNet.textContent = "0"; sPeak.textContent = "0";
+};
+
+lineY.oninput = () => {
+  lineFrac = lineY.value / 100;
+  lineVal.textContent = lineY.value + "%";
+};
+</script>
+</body>
+</html>
