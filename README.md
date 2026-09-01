@@ -25,7 +25,7 @@
 ต้องเสิร์ฟผ่าน http — เปิดไฟล์ตรงๆ แบบ `file://` ไม่ได้ YouTube จะบล็อก embed (Error 153)
 
 ```bash
-python -m http.server 8777
+cd public && python -m http.server 8777
 ```
 
 แล้วเปิด http://localhost:8777

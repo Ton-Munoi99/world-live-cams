@@ -1,13 +1,8 @@
-# เว็บ static ล้วน ไม่ต้อง build — เสิร์ฟไฟล์จากรากโปรเจกต์ตรงๆ
+# เว็บ static ล้วน ไม่ต้อง build
+# publish ต้องไม่ใช่รากโปรเจกต์ ไม่งั้นโฟลเดอร์ netlify/ จะถูกมองเป็นไฟล์เว็บ
 [build]
-  publish = "."
+  publish = "public"
   command = ""
-
-# กันไฟล์ในโฟลเดอร์ counter ไม่ให้ถูกเสิร์ฟเป็นหน้าเว็บ
-[[redirects]]
-  from = "/counter/*"
-  to = "/index.html"
-  status = 404
 
 [[headers]]
   for = "/*"
