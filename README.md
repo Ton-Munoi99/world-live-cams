@@ -40,6 +40,26 @@ python counter/count.py --demo
 python counter/count.py --selftest   # ตรวจ logic โดยไม่ต้องมีวิดีโอ
 ```
 
+## รหัสผ่านเข้าเว็บ
+
+เว็บถูกกันด้วยรหัสผ่านผ่าน Netlify Edge Function — เช็คที่เซิร์ฟเวอร์ก่อนส่งไฟล์ ใส่รหัสผิดจะไม่ได้ HTML เลย
+รหัสเก็บเป็น environment variable ไม่เคยอยู่ในโค้ด
+
+ตั้งค่าที่ Netlify → Site configuration → Environment variables
+
+| ตัวแปร | จำเป็น | ความหมาย |
+|---|---|---|
+| `SITE_PASSWORD` | ใช่ | รหัสผ่าน |
+| `SITE_USER` | ไม่ | ชื่อผู้ใช้ — ไม่ตั้ง = ใส่ชื่ออะไรก็ได้ ขอแค่รหัสถูก |
+
+ตั้งค่าแล้วต้อง **Deploy ใหม่หนึ่งครั้ง** ถึงจะมีผล ถ้ายังไม่ตั้ง `SITE_PASSWORD` เว็บจะปิดไว้พร้อมข้อความบอกวิธีตั้ง (ปลอดภัยกว่าเปิดทิ้ง)
+
+ตรวจตรรกะรหัสผ่าน:
+
+```bash
+node netlify/edge-functions/auth.test.mjs
+```
+
 ## ข้อจำกัดที่ควรรู้
 
 - **video ID ของ YouTube live ตายได้** เมื่อเจ้าของช่องหยุดถ่ายทอดสด → การ์ดจะขึ้น "unavailable" ให้เปลี่ยนลิงก์ใหม่
