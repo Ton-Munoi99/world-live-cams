@@ -70,21 +70,20 @@ def run(source, line_pts, save_path, show):
                            tracker="bytetrack.yaml", verbose=False):
         f = res.orig_img
         det = sv.Detections.from_ultralytics(res)
+        # เฟรมที่ tracker ยังไม่ให้ id (เช่นเฟรมแรก/ไม่มีคน) ข้ามการนับและวาดเส้นทาง
         if det.tracker_id is not None:
             line.trigger(det)
-        ids = det.tracker_id if det.tracker_id is not None else [None] * len(det)
-        f = trace.annotate(f, det)
+            f = trace.annotate(f, det)
+            f = labels.annotate(f, det, labels=[f"#{i}" for i in det.tracker_id])
         f = box.annotate(f, det)
-        f = labels.annotate(f, det, labels=[f"#{i}" for i in ids])
         f = line_anno.annotate(f, line)
-        import cv2 as _cv
-        _cv.putText(f, f"IN {line.in_count}  OUT {line.out_count}  NOW {len(det)}",
-                    (20, 40), _cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
+        cv2.putText(f, f"IN {line.in_count}  OUT {line.out_count}  NOW {len(det)}",
+                    (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2)
         if writer:
             writer.write(f)
         if show:
-            _cv.imshow("people counter", f)
-            if _cv.waitKey(1) & 0xFF == ord("q"):
+            cv2.imshow("people counter", f)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 
     if writer:

@@ -36,9 +36,14 @@ cd public && python -m http.server 8777
 
 ```bash
 pip install ultralytics supervision opencv-python
-python counter/count.py --demo
-python counter/count.py --selftest   # ตรวจ logic โดยไม่ต้องมีวิดีโอ
+python counter/count.py --selftest              # ตรวจตรรกะการนับ ไม่ต้องมีวิดีโอ
+python counter/count.py --demo --save out.mp4   # ดึงวิดีโอตัวอย่างมารันจริง
+python counter/count.py your.mp4 --save out.mp4 # ใช้วิดีโอของตัวเอง
+python counter/count.py 0 --show                # เว็บแคม
 ```
+
+**ทดสอบแล้วจริง** (2026-09-01): วิดีโอตัวอย่าง 1920x1080 · 341 เฟรม · ได้ผล `IN=13 OUT=14 net=-1`
+ครั้งแรกจะโหลดโมเดล `yolo11n.pt` (~5MB) และวิดีโอตัวอย่าง (~7MB) อัตโนมัติ
 
 ## รหัสผ่านเข้าเว็บ
 

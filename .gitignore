@@ -10,3 +10,8 @@ __pycache__/
 # โมเดล/ผลลัพธ์ที่ไฟล์ใหญ่
 *.pt
 *.mp4
+
+# ไฟล์ที่เกิดจากการรัน counter
+counter/*.mp4
+counter/*.pt
+counter/*.png
