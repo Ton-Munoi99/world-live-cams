@@ -2,8 +2,6 @@
 [build]
   publish = "."
   command = ""
-  # ระบุให้ชัด เพราะ publish เป็นรากโปรเจกต์ Netlify อาจมองข้ามโฟลเดอร์นี้
-  edge_functions = "netlify/edge-functions"
 
 # กันไฟล์ในโฟลเดอร์ counter ไม่ให้ถูกเสิร์ฟเป็นหน้าเว็บ
 [[redirects]]
