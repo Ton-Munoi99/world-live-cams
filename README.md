@@ -57,7 +57,7 @@ python counter/count.py --selftest   # ตรวจ logic โดยไม่ต�
 ตรวจตรรกะรหัสผ่าน:
 
 ```bash
-node netlify/edge-functions/auth.test.mjs
+node tests/auth.test.mjs
 ```
 
 ## ข้อจำกัดที่ควรรู้

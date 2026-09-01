@@ -1,6 +1,6 @@
 // เทสต์ตรรกะรหัสผ่าน — รัน: node netlify/edge-functions/auth.test.mjs
 import assert from "node:assert";
-import { isAllowed, parseBasic } from "./auth.js";
+import { isAllowed, parseBasic } from "../netlify/edge-functions/auth.js";
 
 const b64 = (s) => Buffer.from(s, "utf8").toString("base64");
 const hdr = (u, p) => "Basic " + b64(`${u}:${p}`);
