@@ -1,0 +1,56 @@
+name: เช็คกล้องตาย
+
+on:
+  schedule:
+    - cron: "0 2 * * 1"     # ทุกวันจันทร์ 09:00 น. เวลาไทย (02:00 UTC)
+  workflow_dispatch:         # กดรันเองได้จากแท็บ Actions
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: ตรวจตรรกะสคริปต์ก่อน
+        run: python tools/check_cams.py --selftest
+
+      - name: ไล่เช็คกล้องทั้งหมด
+        id: check
+        run: |
+          set +e
+          python tools/check_cams.py --only-bad > report.txt 2>&1
+          echo "bad=$?" >> "$GITHUB_OUTPUT"
+          cat report.txt
+
+      - name: แจ้งเตือนเป็น Issue ถ้าเจอกล้องเสีย
+        if: steps.check.outputs.bad == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="กล้องเสีย ต้องแก้"
+          # รวมไว้ใน issue เดิมถ้ามีเปิดค้างอยู่ จะได้ไม่สร้างใบใหม่ทุกสัปดาห์
+          NUM=$(gh issue list --state open --search "$TITLE in:title" --json number --jq '.[0].number')
+          BODY=$(printf 'เช็คอัตโนมัติเมื่อ %s\n\n```\n%s\n```\n\nแก้โดยลบกล้องออกจาก `public/index.html` หรือหาลิงก์ live ใหม่มาแทน\nสตรีมที่จบแล้วจะไม่กลับมาที่ id เดิม — ถ้าช่องเปิดใหม่จะเป็น id ใหม่เสมอ' "$(date -u '+%Y-%m-%d %H:%M UTC')" "$(cat report.txt)")
+          if [ -n "$NUM" ]; then
+            gh issue comment "$NUM" --body "$BODY"
+          else
+            gh issue create --title "$TITLE" --body "$BODY"
+          fi
+
+      - name: ปิด Issue ถ้ากล้องกลับมาปกติหมดแล้ว
+        if: steps.check.outputs.bad == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NUM=$(gh issue list --state open --search "กล้องเสีย ต้องแก้ in:title" --json number --jq '.[0].number')
+          if [ -n "$NUM" ]; then
+            gh issue close "$NUM" --comment "เช็คล่าสุดแล้วกล้องใช้ได้ครบทุกตัว ปิดอัตโนมัติ"
+          fi
