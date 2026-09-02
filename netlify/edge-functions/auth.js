@@ -42,14 +42,11 @@ export function isAllowed(header, expectUser, expectPass) {
   return expectUser ? safeEqual(c.user, expectUser) : true;
 }
 
-const env = (k) => {
-  try { return globalThis.Netlify?.env?.get(k) ?? globalThis.Deno?.env?.get(k) ?? ""; }
-  catch { return ""; }
-};
+const env = (k) => globalThis.Netlify?.env?.get(k) ?? "";
 
-const page = (title, body) =>
+const page = (body) =>
   `<!doctype html><html lang="th"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>World Live Cams</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0B0E13;color:#E8EBF0;
 font-family:system-ui,"Segoe UI",sans-serif;padding:24px;line-height:1.7}
 .box{max-width:44ch;text-align:center}h1{font-size:19px;margin:0 0 10px}
@@ -63,7 +60,7 @@ export default async (request, context) => {
   // ยังไม่ตั้งรหัส — ปิดเว็บไว้ก่อน ปลอดภัยกว่าเปิดทิ้ง แล้วบอกวิธีตั้ง
   if (!pass) {
     return new Response(
-      page("ยังไม่ได้ตั้งรหัสผ่าน", `<h1>🔒 ยังไม่ได้ตั้งรหัสผ่าน</h1>
+      page(`<h1>🔒 ยังไม่ได้ตั้งรหัสผ่าน</h1>
       <p>ไปที่ Netlify → Site configuration → Environment variables</p>
       <p>เพิ่ม <code>SITE_PASSWORD</code> แล้วสั่ง Deploy ใหม่หนึ่งครั้ง</p>`),
       { status: 503, headers: { "content-type": "text/html; charset=utf-8" } }
@@ -75,7 +72,7 @@ export default async (request, context) => {
   }
 
   return new Response(
-    page("ต้องใส่รหัสผ่าน", `<h1>🔒 หน้านี้ต้องใส่รหัสผ่าน</h1>
+    page(`<h1>🔒 หน้านี้ต้องใส่รหัสผ่าน</h1>
     <p>รีเฟรชหน้านี้เพื่อกรอกใหม่ หรือขอรหัสจากเจ้าของเว็บ</p>`),
     {
       status: 401,

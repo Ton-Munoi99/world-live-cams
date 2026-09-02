@@ -8,14 +8,17 @@
  * ตรวจตรรกะ: node tests/tracker.test.mjs
  */
 
-export function createTracker({ dist = 0.18, maxMiss = 12 } = {}) {
+const DIST = 0.18;    // ระยะจับคู่สูงสุด (สัดส่วนความกว้างภาพ)
+const MAX_MISS = 12;  // หายกี่เฟรมถึงลบทิ้ง
+
+export function createTracker() {
   let tracks = [];
   let nextId = 1;
   let inCount = 0;
   let outCount = 0;
 
   function update(dets, W, H, lineFrac) {
-    const thr = dist * W;
+    const thr = DIST * W;
 
     for (const t of tracks) {
       t.seen = false;
@@ -49,7 +52,7 @@ export function createTracker({ dist = 0.18, maxMiss = 12 } = {}) {
       if (t.prevY > lineY && t.cy <= lineY) inCount++;        // ข้ามขึ้น = เข้า
       else if (t.prevY < lineY && t.cy >= lineY) outCount++;  // ข้ามลง = ออก
     }
-    tracks = tracks.filter(t => t.miss < maxMiss);
+    tracks = tracks.filter(t => t.miss < MAX_MISS);
   }
 
   return {

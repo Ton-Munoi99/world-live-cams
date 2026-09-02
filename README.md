@@ -49,10 +49,11 @@ node tests/tracker.test.mjs
 
 ```bash
 pip install ultralytics supervision opencv-python
-python counter/count.py --selftest              # ตรวจตรรกะการนับ ไม่ต้องมีวิดีโอ
-python counter/count.py --demo --save out.mp4   # ดึงวิดีโอตัวอย่างมารันจริง
-python counter/count.py your.mp4 --save out.mp4 # ใช้วิดีโอของตัวเอง
-python counter/count.py 0 --show                # เว็บแคม
+python counter/count.py --selftest                        # ตรวจตรรกะการนับ ไม่ต้องมีวิดีโอ
+python counter/count.py --demo --save out.mp4             # ดึงวิดีโอตัวอย่างมารันจริง
+python counter/count.py your.mp4 --save out.mp4           # ใช้วิดีโอของตัวเอง
+python counter/count.py 0 --show                          # เว็บแคม
+python counter/count.py --url <yt_url> --minutes 3 --every 3   # สตรีมสด (ต้องมี yt-dlp)
 ```
 
 **ทดสอบแล้วจริง** (2026-09-01): วิดีโอตัวอย่าง 1920x1080 · 341 เฟรม · ได้ผล `IN=13 OUT=14 net=-1`
@@ -92,7 +93,7 @@ python tools/check_cams.py --selftest  # ตรวจตรรกะ ไม่�
 ออก exit code 1 ถ้าเจอตัวเสีย
 
 **เช็คอัตโนมัติทุกสัปดาห์** — `.github/workflows/check-cams.yml` รันทุกวันจันทร์ 09:00 น. (เวลาไทย)
-เจอกล้องเสียจะเปิด GitHub Issue แจ้ง แก้ครบแล้วปิด issue ให้เอง
+เจอกล้องเสียจะเปิด GitHub Issue แจ้ง
 
 > **ข้อจำกัด:** YouTube ตัดข้อมูล `playableInEmbed`/`isLiveNow` ออกจากหน้าที่เสิร์ฟให้ IP ดาต้าเซ็นเตอร์
 > (ขึ้น "Sign in to confirm you're not a bot") ทำให้ GitHub Actions มักเช็คไม่ได้ —

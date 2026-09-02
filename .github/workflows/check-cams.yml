@@ -51,12 +51,3 @@ jobs:
             gh issue create --title "$TITLE" --body "$BODY"
           fi
 
-      - name: ปิด Issue ถ้ากล้องกลับมาปกติหมดแล้ว
-        if: steps.check.outputs.bad == '0'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          NUM=$(gh issue list --state open --search "กล้องเสีย ต้องแก้ in:title" --json number --jq '.[0].number')
-          if [ -n "$NUM" ]; then
-            gh issue close "$NUM" --comment "เช็คล่าสุดแล้วกล้องใช้ได้ครบทุกตัว ปิดอัตโนมัติ"
-          fi

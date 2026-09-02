@@ -7,7 +7,10 @@ People counter prototype — นับคนเดินข้ามเส้น
           python count.py street.mp4 --save out.mp4        # เซฟวิดีโอที่มีตัวเลขกำกับ
           python count.py 0                                 # ใช้เว็บแคม
           python count.py street.mp4 --line 0 540 1920 540  # ตีเส้นเอง (x1 y1 x2 y2)
+          python count.py --url <youtube_url> --minutes 3   # สตรีมสด หยุดเองตามเวลา
           python count.py --selftest                        # ตรวจ logic นับข้ามเส้น (ไม่ต้องมีวิดีโอ)
+
+--url ต้องมี yt-dlp (pip install yt-dlp) | การดึงเฟรมจาก YouTube ผิด ToS ใช้เป็น demo เทคนิคเท่านั้น
 
 data ที่ได้: in_count / out_count สด → ต่อยอดส่งขึ้น API/dashboard ขายเป็น foot-traffic analytics ได้
 ponytail: การนับใช้ supervision.LineZone ทั้งหมด เราแค่ต่อท่อ YOLO→tracker→เส้น
@@ -32,7 +35,18 @@ def selftest():
     print(f"[selftest OK] นับข้ามเส้นได้ 1 ครั้ง (in={line.in_count}, out={line.out_count})")
 
 
-def run(source, line_pts, save_path, show):
+def stream_url(url):
+    """แปลงลิงก์ YouTube เป็น URL สตรีมที่ OpenCV เปิดได้"""
+    import subprocess
+    out = subprocess.run([sys.executable, "-m", "yt_dlp", "-g", "-f", "best[height<=720]/best", url],
+                         capture_output=True, text=True, timeout=90)
+    if out.returncode:
+        sys.exit("ดึง URL สตรีมไม่ได้: " + out.stderr[-500:])
+    return out.stdout.strip().splitlines()[0]
+
+
+def run(source, line_pts, save_path, show, minutes=0, every=1):
+    import time
     import cv2, supervision as sv
     from ultralytics import YOLO
 
@@ -65,9 +79,16 @@ def run(source, line_pts, save_path, show):
     if save_path:
         writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
 
+    deadline = time.time() + minutes * 60 if minutes else None
+    idx = 0
     # classes=[0] = คนเท่านั้น | persist=True เพื่อคง tracker_id ข้ามเฟรม
     for res in model.track(source=src, stream=True, persist=True, classes=[0],
                            tracker="bytetrack.yaml", verbose=False):
+        if deadline and time.time() > deadline:
+            break
+        idx += 1
+        if idx % every:          # ข้ามเฟรมเพื่อลดภาระ CPU ตอนรับสตรีมสด
+            continue
         f = res.orig_img
         det = sv.Detections.from_ultralytics(res)
         # เฟรมที่ tracker ยังไม่ให้ id (เช่นเฟรมแรก/ไม่มีคน) ข้ามการนับและวาดเส้นทาง
@@ -95,6 +116,9 @@ def run(source, line_pts, save_path, show):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("source", nargs="?", help="ไฟล์วิดีโอ หรือ 0 = เว็บแคม")
+    p.add_argument("--url", help="ลิงก์ YouTube live (ต้องมี yt-dlp)")
+    p.add_argument("--minutes", type=float, default=0, help="นับกี่นาทีแล้วหยุด (0 = จนจบวิดีโอ)")
+    p.add_argument("--every", type=int, default=1, help="ประมวลผลทุกเฟรมที่ N (สตรีมสดใช้ 3)")
     p.add_argument("--line", nargs=4, type=int, metavar=("x1", "y1", "x2", "y2"))
     p.add_argument("--save", metavar="out.mp4")
     p.add_argument("--show", action="store_true", help="เปิดหน้าต่างดูสด")
@@ -103,11 +127,14 @@ if __name__ == "__main__":
     a = p.parse_args()
     if a.selftest:
         selftest()
-    elif a.demo:
+        sys.exit()
+    if a.demo:
         from supervision.assets import download_assets, VideoAssets
-        vid = download_assets(VideoAssets.PEOPLE_WALKING)
-        run(vid, a.line, a.save or "demo_out.mp4", a.show)
+        src = download_assets(VideoAssets.PEOPLE_WALKING)
+    elif a.url:
+        src = stream_url(a.url)
     elif a.source:
-        run(a.source, a.line, a.save, a.show or not a.save)
+        src = a.source
     else:
-        p.error("ต้องระบุไฟล์วิดีโอ หรือ --selftest")
+        p.error("ต้องระบุไฟล์วิดีโอ, --url, --demo หรือ --selftest")
+    run(src, a.line, a.save, a.show or not a.save, a.minutes, a.every)

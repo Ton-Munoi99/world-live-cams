@@ -20,10 +20,13 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 PAGE = Path(__file__).resolve().parent.parent / "public" / "index.html"
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/120 Safari/537.36")
 # CONSENT: ข้ามหน้ายินยอมคุกกี้ที่ YouTube เสิร์ฟให้บาง IP (เช่นดาต้าเซ็นเตอร์ของ CI)
-HEADERS = {"User-Agent": UA, "Accept-Language": "en-US,en;q=0.9", "Cookie": "CONSENT=YES+1"}
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/120 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Cookie": "CONSENT=YES+1",
+}
 
 # {name:"...", loc:"...", cat:"...", v:"VIDEOID"}
 CAM_RE = re.compile(
@@ -101,27 +104,13 @@ def selftest():
     print("[selftest OK] แกะรายการกล้อง + แปลผล + กันหน้าปลอม/หน้าถูกตัด ถูกต้อง")
 
 
-def diag(vid):
-    """ดูว่าหน้าที่ได้จากเครื่องนี้มีเครื่องหมายอะไรบ้าง — ใช้หาสาเหตุเวลาผลไม่ตรงกัน"""
-    req = urllib.request.Request(f"https://www.youtube.com/watch?v={vid}&hl=en&gl=US", headers=HEADERS)
-    html = urllib.request.urlopen(req, timeout=25).read().decode("utf8", "ignore")
-    print(f"ขนาดหน้า {len(html):,} ตัวอักษร")
-    for m in ['"videoDetails"', f'"videoId":"{vid}"', "ytInitialPlayerResponse",
-              '"isLiveNow"', '"isLiveNow":true', '"playableInEmbed"', '"playableInEmbed":true',
-              '"isLive":true', "consent.youtube.com", "captcha", "Sign in to confirm"]:
-        print(f"  {m:32} {m in html}")
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only-bad", action="store_true", help="โชว์เฉพาะตัวที่เสีย")
     ap.add_argument("--selftest", action="store_true")
-    ap.add_argument("--diag", metavar="VIDEOID", help="ดูเครื่องหมายในหน้าที่ได้")
     a = ap.parse_args()
     if a.selftest:
         return selftest()
-    if a.diag:
-        return diag(a.diag)
 
     cams = parse_cams(PAGE.read_text(encoding="utf-8"))
     if not cams:
