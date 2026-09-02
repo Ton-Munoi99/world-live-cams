@@ -22,9 +22,6 @@ jobs:
       - name: ตรวจตรรกะสคริปต์ก่อน
         run: python tools/check_cams.py --selftest
 
-      - name: ดูว่าหน้าที่ runner ได้มีอะไรบ้าง
-        run: python tools/check_cams.py --diag JQ_jwk_7OVE
-
       - name: ไล่เช็คกล้องทั้งหมด
         id: check
         run: |
@@ -37,7 +34,7 @@ jobs:
       - name: เตือนถ้าเช็คไม่สำเร็จ (ไม่ใช่กล้องเสีย)
         if: steps.check.outputs.bad == '2'
         run: |
-          echo "::warning::YouTube ไม่ยอมให้ IP ของ runner ดึงหน้าวิดีโอ รอบนี้เช็คไม่ได้ ไม่ได้แปลว่ากล้องเสีย"
+          echo "::warning::YouTube ตัดข้อมูลหน้าวิดีโอสำหรับ IP ของ GitHub รอบนี้เช็คไม่ได้ (ไม่ได้แปลว่ากล้องเสีย) — รัน python tools/check_cams.py บนเครื่องตัวเองแทน"
 
       - name: แจ้งเตือนเป็น Issue ถ้าเจอกล้องเสีย
         if: steps.check.outputs.bad == '1'

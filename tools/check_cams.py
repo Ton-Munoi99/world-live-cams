@@ -48,8 +48,17 @@ def verdict(live, embed):
 
 
 def got_real_page(html, vid):
-    """ได้หน้าวิดีโอจริงไหม — กัน YouTube เสิร์ฟหน้า consent/บล็อกบอทแล้วเราไปฟันธงว่ากล้องตาย"""
-    return '"videoDetails"' in html and f'"videoId":"{vid}"' in html
+    """
+    หน้าที่ได้ใช้ตัดสินได้จริงไหม
+
+    YouTube เสิร์ฟหน้าแบบตัดข้อมูลให้ IP ดาต้าเซ็นเตอร์ (เช่น GitHub Actions) —
+    ยังมี videoDetails/videoId แต่ "ตัด key playableInEmbed กับ isLiveNow ทิ้ง"
+    ถ้าดูแค่ค่าจะกลายเป็น false แล้วฟันธงผิดว่ากล้องตายทั้งหมด
+    จึงต้องเช็คว่ามี key อยู่จริง ไม่ใช่ดูแค่ค่า
+    """
+    return (f'"videoId":"{vid}"' in html
+            and '"playableInEmbed"' in html
+            and '"isLiveNow"' in html)
 
 
 def check(cam):
@@ -82,10 +91,14 @@ def selftest():
     assert verdict(True, False)[0] == "NOEMBED"
     assert verdict(False, False)[0] == "DEAD"
 
-    assert got_real_page('x"videoDetails"y"videoId":"abcdefghijk"z', "abcdefghijk")
+    full = '"videoId":"abcdefghijk" "playableInEmbed":true "isLiveNow":true'
+    assert got_real_page(full, "abcdefghijk")
     assert not got_real_page("หน้ายินยอมคุกกี้", "abcdefghijk"), "หน้าไม่ใช่วิดีโอต้องไม่ผ่าน"
-    assert not got_real_page('"videoDetails" แต่คนละคลิป "videoId":"zzzzzzzzzzz"', "abcdefghijk")
-    print("[selftest OK] แกะรายการกล้อง + แปลผล + กันหน้าปลอม ถูกต้อง")
+    assert not got_real_page(full, "zzzzzzzzzzz"), "คนละคลิปต้องไม่ผ่าน"
+    # หน้าแบบที่ GitHub runner ได้ — มี videoDetails แต่ถูกตัด key ที่เราต้องใช้
+    stripped = '"videoDetails" "videoId":"abcdefghijk" "isLive":true'
+    assert not got_real_page(stripped, "abcdefghijk"), "หน้าที่ถูกตัด key ต้องไม่ถือว่าเช็คได้"
+    print("[selftest OK] แกะรายการกล้อง + แปลผล + กันหน้าปลอม/หน้าถูกตัด ถูกต้อง")
 
 
 def diag(vid):
