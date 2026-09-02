@@ -4,12 +4,6 @@
   publish = "public"
   command = ""
 
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "strict-origin-when-cross-origin"
-
 # กันเว็บด้วยรหัสผ่าน — เช็คที่ edge ก่อนส่งไฟล์ (ตั้ง SITE_PASSWORD ใน Netlify)
 [[edge_functions]]
   path = "/*"

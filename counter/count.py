@@ -1,18 +1,7 @@
 """
-People counter prototype — นับคนเดินข้ามเส้น เข้า/ออก จากไฟล์วิดีโอ
-เทคโนโลยี: YOLO11 (detect คน) + supervision ByteTrack (track) + LineZone (นับข้ามเส้น)
+นับคนเดินข้ามเส้น เข้า/ออก — YOLO11 + supervision ByteTrack + LineZone
+วิธีใช้และข้อจำกัดดูที่ README หัวข้อ "โฟลเดอร์ counter/"
 
-ติดตั้ง:  pip install ultralytics supervision opencv-python
-รัน:      python count.py street.mp4
-          python count.py street.mp4 --save out.mp4        # เซฟวิดีโอที่มีตัวเลขกำกับ
-          python count.py 0                                 # ใช้เว็บแคม
-          python count.py street.mp4 --line 0 540 1920 540  # ตีเส้นเอง (x1 y1 x2 y2)
-          python count.py --url <youtube_url> --minutes 3   # สตรีมสด หยุดเองตามเวลา
-          python count.py --selftest                        # ตรวจ logic นับข้ามเส้น (ไม่ต้องมีวิดีโอ)
-
---url ต้องมี yt-dlp (pip install yt-dlp) | การดึงเฟรมจาก YouTube ผิด ToS ใช้เป็น demo เทคนิคเท่านั้น
-
-data ที่ได้: in_count / out_count สด → ต่อยอดส่งขึ้น API/dashboard ขายเป็น foot-traffic analytics ได้
 ponytail: การนับใช้ supervision.LineZone ทั้งหมด เราแค่ต่อท่อ YOLO→tracker→เส้น
 """
 import argparse, sys

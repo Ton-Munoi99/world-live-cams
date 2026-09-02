@@ -1,109 +1,84 @@
 # World Live Cams
 
-เว็บดูกล้องถ่ายทอดสดทั่วโลก 53 ตัว — ไม่ต้องติดตั้งอะไร เปิดไฟล์เดียวจบ
+เว็บดูกล้องถ่ายทอดสด 53 ตัวทั่วโลก — ไฟล์เดียว ไม่ต้อง build ไม่มี dependency
 
-**เดโม:** https://world-live-cams.netlify.app
-
-## มีอะไรบ้าง
+**เดโม:** https://world-live-cams.netlify.app (ต้องใส่รหัสผ่าน)
 
 | หมวด | จำนวน | ตัวอย่าง |
 |---|---|---|
-| ไทย | 21 | กรุงเทพ 11, เกาะสมุย 3, หัวหิน, พัทยา, เกาะเต่า, เกาะเสม็ด, เกาะช้าง, เกาะพะงัน |
+| ไทย | 18 | กรุงเทพ 11, เกาะสมุย 3, หัวหิน, พัทยา, เกาะเต่า, เกาะช้าง, เกาะพะงัน |
 | เมือง | 21 | Times Square, Shibuya, Abbey Road, เวนิส, ซิดนีย์, โซล |
 | ธรรมชาติ | 8 | ภูเขาไฟ Mayon, แสงเหนือ, ทะเลทราย Namib, โลกจากอวกาศ |
 | สัตว์ | 6 | หมีตกปลา Brooks Falls, แนวปะการัง, รังนกอินทรี |
 
-## ฟีเจอร์
-
-- แตะการ์ดเพื่อเล่น — **เล่นทีละกล้อง** เปิดตัวใหม่หยุดตัวเก่าอัตโนมัติ (กันเสียงตีกัน)
-- กรองตามหมวดด้วยชิป + ค้นหาตามชื่อ/เมือง
-- เพิ่มกล้องเองได้ด้วยการวางลิงก์ YouTube Live (เก็บใน localStorage ของเครื่องนั้น)
-- รองรับมือถือเต็มรูปแบบ (`playsinline`, ชิปเลื่อนแนวนอน, ปุ่มขนาดนิ้วแตะ)
+แตะการ์ดเพื่อเล่น — เล่นทีละกล้อง เปิดตัวใหม่หยุดตัวเก่าอัตโนมัติ · กรองด้วยชิปหมวด + ค้นหา ·
+เพิ่มกล้องเองด้วยลิงก์ YouTube Live (เก็บใน localStorage) · รองรับมือถือเต็มรูปแบบ
 
 ## รันในเครื่อง
 
-ต้องเสิร์ฟผ่าน http — เปิดไฟล์ตรงๆ แบบ `file://` ไม่ได้ YouTube จะบล็อก embed (Error 153)
+ต้องเสิร์ฟผ่าน http — เปิด `file://` ตรงๆ ไม่ได้ YouTube จะบล็อก embed (Error 153)
 
 ```bash
 cd public && python -m http.server 8777
 ```
 
-แล้วเปิด http://localhost:8777
-
-## นับคนในเว็บ (หน้า /counter.html)
-
-กดปุ่ม **👣 นับคน** บนหน้าแรก — นับคนเดินผ่านจาก **กล้องของเครื่อง** หรือ **ไฟล์วิดีโอ** ที่เลือก
-ประมวลผลในเบราว์เซอร์ทั้งหมดด้วย TensorFlow.js (coco-ssd) ภาพไม่ถูกส่งออกไปไหน
-
-**นับกล้อง YouTube ในหน้าแรกไม่ได้** — iframe เป็น cross-origin เบราว์เซอร์ห้ามอ่าน pixel เป็นข้อจำกัดตายตัว
-
-ตรวจตรรกะติดตาม+นับ:
-
-```bash
-node tests/tracker.test.mjs
-```
-
-## โฟลเดอร์ counter/
-
-ต้นแบบนับคนเดินผ่านจากวิดีโอ (YOLO11 + ByteTrack) แยกจากตัวเว็บ
-
-```bash
-pip install ultralytics supervision opencv-python
-python counter/count.py --selftest                        # ตรวจตรรกะการนับ ไม่ต้องมีวิดีโอ
-python counter/count.py --demo --save out.mp4             # ดึงวิดีโอตัวอย่างมารันจริง
-python counter/count.py your.mp4 --save out.mp4           # ใช้วิดีโอของตัวเอง
-python counter/count.py 0 --show                          # เว็บแคม
-python counter/count.py --url <yt_url> --minutes 3 --every 3   # สตรีมสด (ต้องมี yt-dlp)
-```
-
-**ทดสอบแล้วจริง** (2026-09-01): วิดีโอตัวอย่าง 1920x1080 · 341 เฟรม · ได้ผล `IN=13 OUT=14 net=-1`
-ครั้งแรกจะโหลดโมเดล `yolo11n.pt` (~5MB) และวิดีโอตัวอย่าง (~7MB) อัตโนมัติ
-
 ## รหัสผ่านเข้าเว็บ
 
-เว็บถูกกันด้วยรหัสผ่านผ่าน Netlify Edge Function — เช็คที่เซิร์ฟเวอร์ก่อนส่งไฟล์ ใส่รหัสผิดจะไม่ได้ HTML เลย
+`netlify/edge-functions/auth.js` เช็ค HTTP Basic Auth ที่ edge **ก่อน**ส่งไฟล์ — รหัสผิดไม่ได้ HTML เลย
 รหัสเก็บเป็น environment variable ไม่เคยอยู่ในโค้ด
 
-ตั้งค่าที่ Netlify → Site configuration → Environment variables
+ตั้งที่ Netlify → Site configuration → Environment variables แล้ว **Deploy ใหม่หนึ่งครั้ง**
 
 | ตัวแปร | จำเป็น | ความหมาย |
 |---|---|---|
-| `SITE_PASSWORD` | ใช่ | รหัสผ่าน |
-| `SITE_USER` | ไม่ | ชื่อผู้ใช้ — ไม่ตั้ง = ใส่ชื่ออะไรก็ได้ ขอแค่รหัสถูก |
+| `SITE_PASSWORD` | ใช่ | รหัสผ่าน (ภาษาไทยได้) |
+| `SITE_USER` | ไม่ | ไม่ตั้ง = ใส่ชื่ออะไรก็ผ่าน ขอแค่รหัสถูก |
 
-ตั้งค่าแล้วต้อง **Deploy ใหม่หนึ่งครั้ง** ถึงจะมีผล ถ้ายังไม่ตั้ง `SITE_PASSWORD` เว็บจะปิดไว้พร้อมข้อความบอกวิธีตั้ง (ปลอดภัยกว่าเปิดทิ้ง)
+ยังไม่ตั้ง `SITE_PASSWORD` = เว็บปิดไว้พร้อมข้อความบอกวิธีตั้ง (ปลอดภัยกว่าเปิดทิ้ง)
 
-ตรวจตรรกะรหัสผ่าน:
+## นับคนในเว็บ — `/counter.html`
+
+กดปุ่ม **👣 นับคน** บนหน้าแรก นับคนเดินผ่านจากกล้องของเครื่องหรือไฟล์วิดีโอ
+ประมวลผลในเบราว์เซอร์ด้วย TensorFlow.js (coco-ssd) ภาพไม่ถูกส่งออกไปไหน
+
+**นับกล้อง YouTube ในหน้าแรกไม่ได้** — iframe เป็น cross-origin เบราว์เซอร์ห้ามอ่าน pixel เป็นข้อจำกัดตายตัว
+
+## นับคนแบบแม่นกว่า — `counter/count.py`
+
+YOLO11 + ByteTrack แม่นกว่าเวอร์ชันเบราว์เซอร์ เหมาะกับเก็บข้อมูลจริง
 
 ```bash
-node tests/auth.test.mjs
+pip install ultralytics supervision opencv-python
+python counter/count.py --selftest                       # ตรวจตรรกะ ไม่ต้องมีวิดีโอ
+python counter/count.py --demo --save out.mp4            # วิดีโอตัวอย่าง
+python counter/count.py your.mp4 --save out.mp4
+python counter/count.py 0 --show                         # เว็บแคม
+python counter/count.py --url <yt_url> --minutes 3 --every 3   # สตรีมสด (ต้องมี yt-dlp)
 ```
+
+ได้ `IN` / `OUT` / `net` = foot-traffic data
+`--url` ดึงเฟรมจาก YouTube ซึ่งผิด ToS ของเขา — ใช้เป็น demo เทคนิคเท่านั้น
 
 ## เช็คกล้องตาย
 
-video id ของ YouTube live ตายเมื่อเจ้าของช่องหยุดถ่ายทอด — รันคำสั่งนี้เป็นระยะเพื่อหาตัวที่เสีย
+id ของ YouTube live ตายเมื่อเจ้าของช่องหยุดถ่ายทอด **และไม่กลับมาที่ id เดิม** — ถ้าเปิดใหม่จะเป็น id ใหม่เสมอ
 
 ```bash
-python tools/check_cams.py             # เช็คทั้งหมด
-python tools/check_cams.py --only-bad  # โชว์เฉพาะที่เสีย
-python tools/check_cams.py --selftest  # ตรวจตรรกะ ไม่ต้องต่อเน็ต
+python tools/check_cams.py             # เช็คทั้งหมด (~20 วินาที)
+python tools/check_cams.py --only-bad
+python tools/check_cams.py --selftest
 ```
 
-แยกผลเป็น 3 แบบ: **ตาย** (หยุด live) · **ฝังไม่ได้** (ปิด embed) · **เช็คไม่ได้** (เน็ตมีปัญหา)
-ออก exit code 1 ถ้าเจอตัวเสีย
+แยกผล **ตาย** (หยุด live) · **ฝังไม่ได้** (ปิด embed) · **เช็คไม่ได้**
 
-**เช็คอัตโนมัติทุกสัปดาห์** — `.github/workflows/check-cams.yml` รันทุกวันจันทร์ 09:00 น. (เวลาไทย)
-เจอกล้องเสียจะเปิด GitHub Issue แจ้ง
+> รันบนเครื่องตัวเองเท่านั้น — YouTube ตัด `playableInEmbed`/`isLiveNow` ออกจากหน้าที่เสิร์ฟให้
+> IP ดาต้าเซ็นเตอร์ (ขึ้น "Sign in to confirm you're not a bot") ทำให้ CI เช็คไม่ได้
 
-> **ข้อจำกัด:** YouTube ตัดข้อมูล `playableInEmbed`/`isLiveNow` ออกจากหน้าที่เสิร์ฟให้ IP ดาต้าเซ็นเตอร์
-> (ขึ้น "Sign in to confirm you're not a bot") ทำให้ GitHub Actions มักเช็คไม่ได้ —
-> รอบไหนเช็คไม่ได้จะขึ้น warning เฉยๆ **ไม่เปิด issue หลอก**
-> ที่เชื่อถือได้คือ **รันบนเครื่องตัวเอง** ใช้เวลา ~20 วินาที
+## เทสต์
 
-**สตรีมที่จบแล้วไม่กลับมาที่ id เดิม** — YouTube ปิด id นั้นถาวร ถ้าช่องเปิดถ่ายทอดใหม่จะได้ id ใหม่เสมอ
-
-## ข้อจำกัดที่ควรรู้
-
-- **video ID ของ YouTube live ตายได้** เมื่อเจ้าของช่องหยุดถ่ายทอดสด → การ์ดจะขึ้น "unavailable" ให้เปลี่ยนลิงก์ใหม่
-- **บางช่องปิด embed** เล่นได้เฉพาะบน youtube.com เท่านั้น
-- **มือถือบล็อก autoplay** — แตะการ์ดแล้วต้องแตะ ▶ ในเพลเยอร์อีกครั้ง
+```bash
+python counter/count.py --selftest
+python tools/check_cams.py --selftest
+node tests/tracker.test.mjs
+node tests/auth.test.mjs
+```

@@ -19,7 +19,7 @@
   a:hover{text-decoration:underline}
   main{padding:18px 20px;max-width:1100px}
   .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-  button,select{background:var(--surface);color:var(--txt);border:1px solid var(--line);
+  button{background:var(--surface);color:var(--txt);border:1px solid var(--line);
          border-radius:9px;padding:9px 13px;font-size:14px;font-family:inherit;cursor:pointer}
   button:hover:not(:disabled){background:var(--surface-2)}
   button:disabled{opacity:.45;cursor:not-allowed}
@@ -46,7 +46,7 @@
   @media(max-width:640px){
     header{padding:12px 14px}
     main{padding:14px}
-    button,select{font-size:16px;padding:10px 13px}
+    button{font-size:16px;padding:10px 13px}
     .stat .v{font-size:22px}
   }
 </style>
@@ -72,10 +72,10 @@
     <button id="resetBtn" disabled>↺ ล้างตัวเลข</button>
   </div>
 
-  <div class="stage" id="stage">
+  <div class="stage">
     <video id="vid" playsinline muted></video>
     <canvas id="cv"></canvas>
-    <div class="placeholder" id="ph"><span id="phMsg">เลือกกล้องหรือไฟล์วิดีโอเพื่อเริ่มนับ</span><br><span id="loadMsg"></span></div>
+    <div class="placeholder" id="ph">เลือกกล้องหรือไฟล์วิดีโอเพื่อเริ่มนับ</div>
   </div>
 
   <div class="row">
@@ -89,7 +89,6 @@
     <div class="stat out"><div class="k">ออก (ลงล่าง)</div><div class="v mono" id="sOut">0</div></div>
     <div class="stat"><div class="k">สุทธิ</div><div class="v mono" id="sNet">0</div></div>
     <div class="stat"><div class="k">ในเฟรมตอนนี้</div><div class="v mono" id="sNow">0</div></div>
-    <div class="stat"><div class="k">สูงสุด</div><div class="v mono" id="sPeak">0</div></div>
     <div class="stat"><div class="k">ประมวลผล</div><div class="v mono" id="sFps">0</div></div>
   </div>
 
@@ -110,11 +109,9 @@ const vid = document.getElementById("vid");
 const cv = document.getElementById("cv");
 const ctx = cv.getContext("2d");
 const ph = document.getElementById("ph");
-const phMsg = document.getElementById("phMsg");
-const loadMsg = document.getElementById("loadMsg");
 
 let model = null, running = false, stream = null, raf = 0;
-let peak = 0, lineFrac = 0.55;
+let lineFrac = 0.55;
 
 const tracker = createTracker();
 
@@ -154,12 +151,10 @@ async function loop() {
     ctx.font = "bold " + Math.max(16, H / 28) + "px monospace";
     ctx.fillText("IN " + tracker.in + "  OUT " + tracker.out + "  NOW " + dets.length, 14, Math.max(24, H / 22));
 
-    peak = Math.max(peak, dets.length);
     sIn.textContent = tracker.in;
     sOut.textContent = tracker.out;
     sNet.textContent = tracker.in - tracker.out;
     sNow.textContent = dets.length;
-    sPeak.textContent = peak;
 
     frames++;
     const now = performance.now();
@@ -173,16 +168,15 @@ async function loop() {
 
 async function ensureModel() {
   if (model) return;
-  loadMsg.textContent = "กำลังโหลดโมเดลตรวจจับคน… ครั้งแรกใช้เวลาสักครู่";
+  ph.textContent = "กำลังโหลดโมเดลตรวจจับคน… ครั้งแรกใช้เวลาสักครู่";
   model = await cocoSsd.load({ base: "lite_mobilenet_v2" });
-  loadMsg.textContent = "";
 }
 
 async function start() {
   try {
     await ensureModel();
   } catch (e) {
-    loadMsg.textContent = "โหลดโมเดลไม่สำเร็จ: " + e.message;
+    ph.textContent = "โหลดโมเดลไม่สำเร็จ: " + e.message;
     return;
   }
   ph.style.display = "none";
@@ -200,7 +194,7 @@ function stop() {
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   stopBtn.disabled = true;
   ph.style.display = "";
-  phMsg.textContent = "หยุดแล้ว — เลือกกล้องหรือไฟล์เพื่อเริ่มใหม่";
+  ph.textContent = "หยุดแล้ว — เลือกกล้องหรือไฟล์เพื่อเริ่มใหม่";
 }
 
 camBtn.onclick = async () => {
@@ -231,9 +225,9 @@ file.onchange = async e => {
 stopBtn.onclick = stop;
 
 resetBtn.onclick = () => {
-  tracker.reset(); peak = 0;
+  tracker.reset();
   sIn.textContent = "0"; sOut.textContent = "0";
-  sNet.textContent = "0"; sPeak.textContent = "0";
+  sNet.textContent = "0";
 };
 
 lineY.oninput = () => {

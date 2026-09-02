@@ -1,17 +1,11 @@
-# ความลับ — ห้ามขึ้น GitHub เด็ดขาด
+# ความลับ
 .env
-.env.*
-*.key
 
 # ของ Python
 __pycache__/
 *.pyc
 
-# โมเดล/ผลลัพธ์ที่ไฟล์ใหญ่
-*.pt
+# ไฟล์ใหญ่ที่เกิดจากการรัน counter
 *.mp4
-
-# ไฟล์ที่เกิดจากการรัน counter
-counter/*.mp4
-counter/*.pt
+*.pt
 counter/*.png
