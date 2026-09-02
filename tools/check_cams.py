@@ -88,13 +88,27 @@ def selftest():
     print("[selftest OK] แกะรายการกล้อง + แปลผล + กันหน้าปลอม ถูกต้อง")
 
 
+def diag(vid):
+    """ดูว่าหน้าที่ได้จากเครื่องนี้มีเครื่องหมายอะไรบ้าง — ใช้หาสาเหตุเวลาผลไม่ตรงกัน"""
+    req = urllib.request.Request(f"https://www.youtube.com/watch?v={vid}&hl=en&gl=US", headers=HEADERS)
+    html = urllib.request.urlopen(req, timeout=25).read().decode("utf8", "ignore")
+    print(f"ขนาดหน้า {len(html):,} ตัวอักษร")
+    for m in ['"videoDetails"', f'"videoId":"{vid}"', "ytInitialPlayerResponse",
+              '"isLiveNow"', '"isLiveNow":true', '"playableInEmbed"', '"playableInEmbed":true',
+              '"isLive":true', "consent.youtube.com", "captcha", "Sign in to confirm"]:
+        print(f"  {m:32} {m in html}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--only-bad", action="store_true", help="โชว์เฉพาะตัวที่เสีย")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--diag", metavar="VIDEOID", help="ดูเครื่องหมายในหน้าที่ได้")
     a = ap.parse_args()
     if a.selftest:
         return selftest()
+    if a.diag:
+        return diag(a.diag)
 
     cams = parse_cams(PAGE.read_text(encoding="utf-8"))
     if not cams:
