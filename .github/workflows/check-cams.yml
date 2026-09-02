@@ -27,8 +27,14 @@ jobs:
         run: |
           set +e
           python tools/check_cams.py --only-bad > report.txt 2>&1
-          echo "bad=$?" >> "$GITHUB_OUTPUT"
+          CODE=$?          # 0 = ปกติ | 1 = มีกล้องเสียจริง | 2 = เช็คไม่ได้ เชื่อผลไม่ได้
+          echo "bad=$CODE" >> "$GITHUB_OUTPUT"
           cat report.txt
+
+      - name: เตือนถ้าเช็คไม่สำเร็จ (ไม่ใช่กล้องเสีย)
+        if: steps.check.outputs.bad == '2'
+        run: |
+          echo "::warning::YouTube ไม่ยอมให้ IP ของ runner ดึงหน้าวิดีโอ รอบนี้เช็คไม่ได้ ไม่ได้แปลว่ากล้องเสีย"
 
       - name: แจ้งเตือนเป็น Issue ถ้าเจอกล้องเสีย
         if: steps.check.outputs.bad == '1'

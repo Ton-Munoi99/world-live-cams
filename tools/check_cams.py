@@ -22,6 +22,8 @@ from pathlib import Path
 PAGE = Path(__file__).resolve().parent.parent / "public" / "index.html"
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120 Safari/537.36")
+# CONSENT: ข้ามหน้ายินยอมคุกกี้ที่ YouTube เสิร์ฟให้บาง IP (เช่นดาต้าเซ็นเตอร์ของ CI)
+HEADERS = {"User-Agent": UA, "Accept-Language": "en-US,en;q=0.9", "Cookie": "CONSENT=YES+1"}
 
 # {name:"...", loc:"...", cat:"...", v:"VIDEOID"}
 CAM_RE = re.compile(
@@ -45,13 +47,20 @@ def verdict(live, embed):
     return "NOEMBED", "ปิดไม่ให้เว็บอื่นฝัง"
 
 
+def got_real_page(html, vid):
+    """ได้หน้าวิดีโอจริงไหม — กัน YouTube เสิร์ฟหน้า consent/บล็อกบอทแล้วเราไปฟันธงว่ากล้องตาย"""
+    return '"videoDetails"' in html and f'"videoId":"{vid}"' in html
+
+
 def check(cam):
-    url = "https://www.youtube.com/watch?v=" + cam["v"]
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept-Language": "en"})
+    url = "https://www.youtube.com/watch?v=" + cam["v"] + "&hl=en&gl=US"
+    req = urllib.request.Request(url, headers=HEADERS)
     try:
         html = urllib.request.urlopen(req, timeout=25).read().decode("utf8", "ignore")
     except (urllib.error.URLError, TimeoutError) as e:
-        return {**cam, "code": "ERROR", "why": f"เช็คไม่ได้: {e}"}
+        return {**cam, "code": "ERROR", "why": f"เรียกหน้าไม่สำเร็จ: {e}"}
+    if not got_real_page(html, cam["v"]):
+        return {**cam, "code": "ERROR", "why": "ไม่ได้หน้าวิดีโอจริง (อาจโดน YouTube บล็อก)"}
     live = '"isLiveNow":true' in html
     embed = '"playableInEmbed":true' in html
     code, why = verdict(live, embed)
@@ -72,7 +81,11 @@ def selftest():
     assert verdict(False, True)[0] == "DEAD"
     assert verdict(True, False)[0] == "NOEMBED"
     assert verdict(False, False)[0] == "DEAD"
-    print("[selftest OK] แกะรายการกล้อง + แปลผล ถูกต้อง")
+
+    assert got_real_page('x"videoDetails"y"videoId":"abcdefghijk"z', "abcdefghijk")
+    assert not got_real_page("หน้ายินยอมคุกกี้", "abcdefghijk"), "หน้าไม่ใช่วิดีโอต้องไม่ผ่าน"
+    assert not got_real_page('"videoDetails" แต่คนละคลิป "videoId":"zzzzzzzzzzz"', "abcdefghijk")
+    print("[selftest OK] แกะรายการกล้อง + แปลผล + กันหน้าปลอม ถูกต้อง")
 
 
 def main():
@@ -92,19 +105,27 @@ def main():
         results = list(pool.map(check, cams))
 
     icon = {"OK": "OK ", "DEAD": "ตาย", "NOEMBED": "ฝังไม่ได้", "ERROR": "เช็คไม่ได้"}
-    bad = [r for r in results if r["code"] != "OK"]
+    bad = [r for r in results if r["code"] in ("DEAD", "NOEMBED")]
+    unknown = [r for r in results if r["code"] == "ERROR"]
     for r in results:
         if a.only_bad and r["code"] == "OK":
             continue
         print(f'{icon[r["code"]]:10} {r["name"][:38]:40} {r["loc"][:16]:18} {r["why"]}')
 
-    print(f'\nสรุป: ใช้ได้ {len(results)-len(bad)}/{len(results)}')
+    ok = len(results) - len(bad) - len(unknown)
+    print(f'\nสรุป: ใช้ได้ {ok}/{len(results)}'
+          + (f' | เช็คไม่ได้ {len(unknown)}' if unknown else ''))
     if bad:
         print(f"ต้องแก้ {len(bad)} ตัว — ลบออกหรือหาลิงก์ใหม่มาแทน:")
         for r in bad:
             print(f'  {r["name"]}  (v:"{r["v"]}")  {r["why"]}')
-    else:
+    elif not unknown:
         print("ทุกกล้องใช้ได้ปกติ")
+
+    # เช็คไม่สำเร็จเกินครึ่ง = เชื่อผลรอบนี้ไม่ได้ ห้ามฟันธงว่ากล้องเสีย
+    if len(unknown) > len(results) / 2:
+        print(f"\nเชื่อผลรอบนี้ไม่ได้ — เช็คไม่สำเร็จ {len(unknown)}/{len(results)} ตัว")
+        return 2
     return 1 if bad else 0
 
 
