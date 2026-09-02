@@ -78,6 +78,19 @@ python counter/count.py 0 --show                # เว็บแคม
 node tests/auth.test.mjs
 ```
 
+## เช็คกล้องตาย
+
+video id ของ YouTube live ตายเมื่อเจ้าของช่องหยุดถ่ายทอด — รันคำสั่งนี้เป็นระยะเพื่อหาตัวที่เสีย
+
+```bash
+python tools/check_cams.py             # เช็คทั้งหมด
+python tools/check_cams.py --only-bad  # โชว์เฉพาะที่เสีย
+python tools/check_cams.py --selftest  # ตรวจตรรกะ ไม่ต้องต่อเน็ต
+```
+
+แยกผลเป็น 3 แบบ: **ตาย** (หยุด live) · **ฝังไม่ได้** (ปิด embed) · **เช็คไม่ได้** (เน็ตมีปัญหา)
+ออก exit code 1 ถ้าเจอตัวเสีย — เอาไปต่อ CI ได้
+
 ## ข้อจำกัดที่ควรรู้
 
 - **video ID ของ YouTube live ตายได้** เมื่อเจ้าของช่องหยุดถ่ายทอดสด → การ์ดจะขึ้น "unavailable" ให้เปลี่ยนลิงก์ใหม่
