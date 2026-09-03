@@ -64,12 +64,16 @@ python counter/count.py --url <yt_url> --minutes 3 --every 3   # สตรีม
 id ของ YouTube live ตายเมื่อเจ้าของช่องหยุดถ่ายทอด **และไม่กลับมาที่ id เดิม** — ถ้าเปิดใหม่จะเป็น id ใหม่เสมอ
 
 ```bash
-python tools/check_cams.py             # เช็คทั้งหมด (~20 วินาที)
+python tools/check_cams.py             # เช็คทั้งหมด
 python tools/check_cams.py --only-bad
+python tools/check_cams.py --fix       # เจอตาย -> หา id ใหม่จากช่องเดิมมาแทนให้เลย
 python tools/check_cams.py --selftest
 ```
 
 แยกผล **ตาย** (หยุด live) · **ฝังไม่ได้** (ปิด embed) · **เช็คไม่ได้**
+
+`--fix` ตามไปดูช่องเดิมว่าเปิดสตรีมใหม่หรือยัง เจอแล้วสลับ id ในไฟล์ให้อัตโนมัติ
+ไม่ใส่ `--fix` จะแค่บอกว่าเจอตัวแทนตัวไหน ไม่แตะไฟล์
 
 > รันบนเครื่องตัวเองเท่านั้น — YouTube ตัด `playableInEmbed`/`isLiveNow` ออกจากหน้าที่เสิร์ฟให้
 > IP ดาต้าเซ็นเตอร์ (ขึ้น "Sign in to confirm you're not a bot") ทำให้ CI เช็คไม่ได้
