@@ -75,6 +75,23 @@ python tools/check_cams.py --selftest
 `--fix` ตามไปดูช่องเดิมว่าเปิดสตรีมใหม่หรือยัง เจอแล้วสลับ id ในไฟล์ให้อัตโนมัติ
 ไม่ใส่ `--fix` จะแค่บอกว่าเจอตัวแทนตัวไหน ไม่แตะไฟล์
 
+### เช็คอัตโนมัติทุกวัน 08:00
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\install_task.ps1
+```
+
+ตั้ง Windows Task Scheduler ให้รัน `tools\daily_check.ps1` ทุกเช้า — เช็คกล้อง หา id ใหม่ให้ตัวที่ตาย
+แล้ว commit + push เอง (Netlify deploy ต่อให้) ผลย้อนหลังดูที่ `tools\daily_check.log`
+
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `schtasks /Run /TN WorldLiveCams-CheckCams` | สั่งรันเดี๋ยวนี้ |
+| `schtasks /Query /TN WorldLiveCams-CheckCams` | ดูสถานะ / รอบถัดไป |
+| `powershell -ExecutionPolicy Bypass -File tools\install_task.ps1 -Remove` | ถอนออก |
+
+**รอบไหนเช็คไม่สำเร็จ (เน็ตล่ม / โดน 429) จะข้ามไปเฉยๆ ไม่แตะไฟล์** — กันไม่ให้ไปลบกล้องดีๆ ทิ้ง
+
 > รันบนเครื่องตัวเองเท่านั้น — YouTube ตัด `playableInEmbed`/`isLiveNow` ออกจากหน้าที่เสิร์ฟให้
 > IP ดาต้าเซ็นเตอร์ (ขึ้น "Sign in to confirm you're not a bot") ทำให้ CI เช็คไม่ได้
 

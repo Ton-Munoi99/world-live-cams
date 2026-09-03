@@ -68,7 +68,7 @@ def got_real_page(html, vid):
             and '"isLiveNow"' in html)
 
 
-def fetch(url, tries=3):
+def fetch(url, tries=4):
     """ยิงเบาๆ — เจอ 429 (ยิงถี่ไป) ให้รอแล้วลองใหม่ ไม่งั้นจะดูเหมือนกล้องตายทั้งหมด"""
     req = urllib.request.Request(url, headers=HEADERS)
     for i in range(tries):
@@ -77,7 +77,7 @@ def fetch(url, tries=3):
         except urllib.error.HTTPError as e:
             if e.code != 429 or i == tries - 1:
                 raise
-            time.sleep(5 * (i + 1))
+            time.sleep(10 * 2 ** i)   # 10, 20, 40 วิ — งานอัตโนมัติรอได้ ไม่มีคนนั่งดู
     raise RuntimeError("unreachable")
 
 

@@ -9,3 +9,6 @@ __pycache__/
 *.mp4
 *.pt
 counter/*.png
+
+# log ของงานอัตโนมัติ
+tools/daily_check.log
